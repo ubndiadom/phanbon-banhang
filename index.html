@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Quản Lý Bán Hàng — Phân Bón Ia Dom</title>
+<style>
+:root {
+  --green:    #2d6a4f;
+  --green-l:  #40916c;
+  --green-ll: #d8f3dc;
+  --gold:     #e9c46a;
+  --red:      #c1121f;
+  --red-l:    #fff0f0;
+  --bg:       #f8faf8;
+  --card:     #ffffff;
+  --border:   #dde8dd;
+  --text:     #1b2e1f;
+  --muted:    #6b8f71;
+  --shadow:   0 2px 8px rgba(45,106,79,.10);
+  --radius:   10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;font-size:15px;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--green);color:#fff;padding:0 16px;display:flex;align-items:center;
+        gap:10px;height:52px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar h1{font-size:16px;font-weight:700;flex:1}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0}
+.sync-dot.syncing{background:var(--gold);animation:blink 1s infinite}
+.sync-dot.error{background:#ff6b6b}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);
+      position:sticky;top:52px;z-index:99}
+.tab{flex:1;padding:11px 4px;text-align:center;font-size:12px;font-weight:600;
+     color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+.tab .icon{font-size:18px;display:block;margin-bottom:2px}
+
+/* PAGES */
+.page{display:none;padding:14px;max-width:700px;margin:0 auto}
+.page.active{display:block}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);
+      box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card-head{padding:12px 16px;background:var(--green-ll);border-bottom:1px solid var(--border);
+           font-weight:700;color:var(--green);font-size:14px;display:flex;align-items:center;gap:8px}
+.card-body{padding:14px 16px}
+
+/* FORM */
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+                margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
+  font-size:15px;background:#fff;color:var(--text);outline:none;transition:border .2s}
+.form-row input:focus,.form-row select:focus{border-color:var(--green-l)}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* PAYMENT */
+.pay-opts{display:flex;gap:8px}
+.pay-opt{flex:1;border:2px solid var(--border);border-radius:8px;padding:10px;
+         text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:600}
+.pay-opt.sel-cash{border-color:var(--green);background:var(--green-ll);color:var(--green)}
+.pay-opt.sel-debt{border-color:var(--red);background:var(--red-l);color:var(--red)}
+
+/* ITEMS */
+.item-row{display:grid;grid-template-columns:1fr 80px 95px 34px;gap:6px;align-items:center;margin-bottom:8px}
+.item-row input,.item-row select{padding:8px 8px;font-size:13px;border:1.5px solid var(--border);border-radius:8px}
+.btn-rm{background:var(--red);color:#fff;border:none;border-radius:6px;width:30px;height:30px;
+        cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
+
+/* BUTTONS */
+.btn{padding:11px 20px;border:none;border-radius:8px;font-size:15px;font-weight:700;
+     cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--green);color:#fff;width:100%;justify-content:center}
+.btn-primary:hover{background:var(--green-l)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-secondary{background:var(--green-ll);color:var(--green)}
+.btn-outline{background:transparent;border:2px solid var(--green);color:var(--green)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-add{background:var(--green-ll);color:var(--green);border:1.5px dashed var(--green-l);
+         width:100%;justify-content:center;border-radius:8px;padding:9px;font-weight:600;cursor:pointer;
+         display:flex;align-items:center;gap:6px;margin-top:8px}
+
+/* SUMMARY */
+.summary{background:var(--green);color:#fff;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+.summary .row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:14px}
+.summary .row.total{font-size:18px;font-weight:800;border-top:1px solid rgba(255,255,255,.3);
+                    margin-top:8px;padding-top:8px}
+.summary .lbl{opacity:.85}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+      padding:14px;text-align:center}
+.stat .val{font-size:24px;font-weight:800;color:var(--green)}
+.stat .lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.stat.red .val{color:var(--red)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--green-ll);color:var(--green);padding:9px 10px;text-align:left;
+   font-weight:700;font-size:12px;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:#f0f7f0}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-paid{background:var(--green-ll);color:var(--green)}
+.badge-debt{background:var(--red-l);color:var(--red)}
+.badge-col{background:#e8f4fd;color:#1565c0}
+
+/* SEARCH */
+.search-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-bar input{flex:1;min-width:140px;padding:10px 12px;border:1.5px solid var(--border);
+                  border-radius:8px;font-size:14px;outline:none}
+.search-bar input:focus{border-color:var(--green-l)}
+
+/* DEBT CARD */
+.debt-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+           padding:14px;margin-bottom:10px}
+.debt-card .name{font-weight:700;font-size:15px}
+.debt-card .amount{font-size:20px;font-weight:800;color:var(--red)}
+.debt-card .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* HISTORY CARD */
+.hd-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+         padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:box-shadow .2s}
+.hd-card:hover{box-shadow:0 4px 16px rgba(45,106,79,.15)}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty .icon{font-size:48px;margin-bottom:10px}
+
+/* LOADING */
+.loading{text-align:center;padding:30px;color:var(--muted)}
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--green-ll);
+         border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+       background:var(--green);color:#fff;padding:12px 24px;border-radius:30px;
+       font-weight:700;font-size:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);
+       opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.toast.err{background:var(--red)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+          display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);width:100%;
+       max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-head{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;
+            display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:16px}
+.modal-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.btn-x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)}
+
+/* NGƯỜI NHẬP */
+.nv-bar{background:var(--green-ll);border:1px solid var(--border);border-radius:8px;
+        padding:8px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px}
+.nv-bar select{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:13px;background:#fff}
+
+@media(max-width:480px){
+  .item-row{grid-template-columns:1fr 65px 80px 30px}
+  .form-2col{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🌿 Phân Bón Ia Dom</h1>
+  <div class="sync-dot" id="sync-dot" title="Trạng thái kết nối"></div>
+  <span id="topbar-time" style="font-size:12px;opacity:.85"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="gotoTab('ban-hang',this)"><span class="icon">🛒</span>Bán hàng</div>
+  <div class="tab" onclick="gotoTab('lich-su',this)"><span class="icon">📋</span>Lịch sử</div>
+  <div class="tab" onclick="gotoTab('cong-no',this)"><span class="icon">💰</span>Công nợ</div>
+  <div class="tab" onclick="gotoTab('bao-cao',this)"><span class="icon">📊</span>Báo cáo</div>
+  <div class="tab" onclick="gotoTab('cai-dat',this)"><span class="icon">⚙️</span>Cài đặt</div>
+</div>
+
+<!-- BÁN HÀNG -->
+<div class="page active" id="page-ban-hang">
+  <div class="nv-bar">
+    👤 Người nhập:
+    <select id="nv-select">
+      <option value="NV1">Nhân viên 1</option>
+      <option value="NV2">Nhân viên 2</option>
+      <option value="NV3">Nhân viên 3</option>
+      <option value="Chu">Chủ cửa hàng</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="card-head">👤 Khách hàng</div>
+    <div class="card-body">
+      <div class="form-row">
+        <label>Tên khách hàng *</label>
+        <input type="text" id="kh-ten" placeholder="Nhập tên hoặc chọn khách cũ..." list="kh-list" autocomplete="off">
+        <datalist id="kh-list"></datalist>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Số điện thoại</label>
+          <input type="tel" id="kh-sdt" placeholder="0900...">
+        </div>
+        <div class="form-row">
+          <label>Địa chỉ / Thôn</label>
+          <input type="text" id="kh-diachi" placeholder="Thôn...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">📦 Hàng hóa</div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 80px 95px 34px;gap:6px;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Loại phân</span>
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Số bao</span>
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Đơn giá</span>
+        <span></span>
+      </div>
+      <div id="items-list"></div>
+      <button class="btn btn-add" onclick="addItem()">＋ Thêm loại hàng</button>
+    </div>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="row"><span class="lbl">Tổng số bao</span><span id="s-bao">0 bao</span></div>
+    <div class="row"><span class="lbl">Thành tiền</span><span id="s-tien">0 đ</span></div>
+    <div class="row total"><span>TỔNG CỘNG</span><span id="s-total">0 đ</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">💳 Thanh toán</div>
+    <div class="card-body">
+      <div class="form-row">
+        <label>Hình thức</label>
+        <div class="pay-opts">
+          <div class="pay-opt sel-cash" id="opt-cash" onclick="selPay('cash')">💵 Tiền mặt</div>
+          <div class="pay-opt" id="opt-debt" onclick="selPay('debt')">📝 Mua nợ</div>
+        </div>
+      </div>
+      <div class="form-row" id="row-paid">
+        <label>Số tiền nhận</label>
+        <input type="number" id="pay-amt" placeholder="Nhập số tiền..." oninput="calcChange()">
+      </div>
+      <div id="row-change" style="display:none;margin-bottom:12px">
+        <div style="background:#fff8e1;border:1px solid var(--gold);border-radius:8px;
+                    padding:10px 14px;display:flex;justify-content:space-between;">
+          <span style="font-weight:700;color:#856404">Tiền trả lại</span>
+          <span style="font-weight:800;font-size:18px;color:#856404" id="change-val">0 đ</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Ghi chú</label>
+        <input type="text" id="pay-note" placeholder="Ghi chú thêm...">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-save" onclick="saveBill()">💾 Lưu hóa đơn</button>
+  <div style="height:20px"></div>
+</div>
+
+<!-- LỊCH SỬ -->
+<div class="page" id="page-lich-su">
+  <div class="search-bar">
+    <input type="text" id="ls-q" placeholder="🔍 Tìm tên khách..." oninput="renderLS()">
+    <input type="date" id="ls-date" onchange="renderLS()" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px">
+  </div>
+  <div id="ls-list"></div>
+</div>
+
+<!-- CÔNG NỢ -->
+<div class="page" id="page-cong-no">
+  <div class="search-bar">
+    <input type="text" id="cn-q" placeholder="🔍 Tìm khách nợ..." oninput="renderCN()">
+  </div>
+  <div class="stats" id="cn-stats"></div>
+  <div id="cn-list"></div>
+</div>
+
+<!-- BÁO CÁO -->
+<div class="page" id="page-bao-cao">
+  <div class="form-2col" style="margin-bottom:12px">
+    <div class="form-row" style="margin:0">
+      <label>Từ ngày</label>
+      <input type="date" id="bc-from" onchange="renderBC()">
+    </div>
+    <div class="form-row" style="margin:0">
+      <label>Đến ngày</label>
+      <input type="date" id="bc-to" onchange="renderBC()">
+    </div>
+  </div>
+  <div id="bc-content"></div>
+</div>
+
+<!-- CÀI ĐẶT -->
+<div class="page" id="page-cai-dat">
+  <div class="card">
+    <div class="card-head">⚙️ Cấu hình</div>
+    <div class="card-body">
+      <div class="form-row">
+        <label>Google Apps Script URL *</label>
+        <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/...">
+      </div>
+      <div class="form-row">
+        <label>Tên nhân viên (cách nhau bằng dấu phẩy)</label>
+        <input type="text" id="cfg-nv" placeholder="NV1,NV2,Chủ">
+      </div>
+      <button class="btn btn-primary" onclick="saveCfg()">💾 Lưu cấu hình</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">📦 Danh mục phân bón</div>
+    <div class="card-body">
+      <div id="sp-list" style="margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="sp-ten" placeholder="Tên loại phân..." style="flex:1;min-width:140px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">
+        <input type="number" id="sp-gia" placeholder="Giá/bao" style="width:110px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">
+        <button class="btn btn-secondary btn-sm" onclick="addSP()">＋ Thêm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CHI TIẾT HÓA ĐƠN -->
+<div class="modal-bg" id="modal-hd">
+  <div class="modal">
+    <div class="modal-head">
+      <span>📄 Chi tiết hóa đơn</span>
+      <button class="btn-x" onclick="closeModal('modal-hd')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-hd-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" onclick="deleteHD()">🗑️ Xóa</button>
+      <button class="btn btn-primary btn-sm" id="btn-thu" onclick="markPaid()">✅ Đánh dấu đã thu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL THU NỢ -->
+<div class="modal-bg" id="modal-thu">
+  <div class="modal">
+    <div class="modal-head">
+      <span>💰 Thu tiền nợ</span>
+      <button class="btn-x" onclick="closeModal('modal-thu')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-thu-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-sm" onclick="confirmThu()">✅ Xác nhận thu</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════
+let GAS_URL = localStorage.getItem('gas_url') || '';
+let sanpham  = [];
+let khachHang = [];
+let payMode  = 'cash';
+let selHDId  = null;
+let selCNKH  = null;
+let lsCache  = [];
+let cnCache  = [];
+
+// ══════════════════════════════════════
+// API
+// ══════════════════════════════════════
+async function api(params) {
+  if (!GAS_URL) { showToast('Chưa cấu hình URL!', true); return null; }
+  setSyncDot('syncing');
+  try {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${GAS_URL}?${qs}`);
+    const d = await res.json();
+    setSyncDot('ok');
+    return d;
+  } catch(e) {
+    setSyncDot('error');
+    showToast('Lỗi kết nối!', true);
+    return null;
+  }
+}
+
+async function apiPost(body) {
+  if (!GAS_URL) { showToast('Chưa cấu hình URL!', true); return null; }
+  setSyncDot('syncing');
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    const d = await res.json();
+    setSyncDot('ok');
+    return d;
+  } catch(e) {
+    setSyncDot('error');
+    showToast('Lỗi kết nối!', true);
+    return null;
+  }
+}
+
+function setSyncDot(state) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+}
+
+// ══════════════════════════════════════
+// LOAD DỮ LIỆU
+// ══════════════════════════════════════
+async function loadSanPham() {
+  const d = await api({ action: 'getSanPham' });
+  if (d) { sanpham = d; renderSPList(); }
+}
+
+async function loadKhachHang() {
+  const d = await api({ action: 'getKhachHang' });
+  if (d) {
+    khachHang = d;
+    const dl = document.getElementById('kh-list');
+    dl.innerHTML = d.map(k => `<option value="${k.ten}">`).join('');
+  }
+}
+
+// Tự điền SĐT, địa chỉ khi chọn khách cũ
+document.getElementById('kh-ten').addEventListener('change', function() {
+  const kh = khachHang.find(k => k.ten === this.value);
+  if (kh) {
+    if (kh.sdt) document.getElementById('kh-sdt').value = kh.sdt;
+    if (kh.diachi) document.getElementById('kh-diachi').value = kh.diachi;
+  }
+});
+
+// ══════════════════════════════════════
+// BÁN HÀNG
+// ══════════════════════════════════════
+let itemCount = 0;
+
+function addItem() {
+  itemCount++;
+  const id = itemCount;
+  const opts = sanpham.map(p =>
+    `<option value="${p.id}" data-price="${p.don_gia}">${p.ten}</option>`
+  ).join('');
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.id = 'ir-' + id;
+  row.innerHTML = `
+    <select onchange="fillP(this,${id})" style="padding:7px 6px;font-size:12px;border:1.5px solid var(--border);border-radius:8px">
+      <option value="">-- Chọn --</option>${opts}
+    </select>
+    <input type="number" id="qty-${id}" placeholder="Bao" min="1" value="1" oninput="calcTotal()">
+    <input type="number" id="prc-${id}" placeholder="Giá" oninput="calcTotal()">
+    <button class="btn-rm" onclick="rmItem(${id})">✕</button>
+  `;
+  document.getElementById('items-list').appendChild(row);
+  calcTotal();
+}
+
+function fillP(sel, id) {
+  const opt = sel.options[sel.selectedIndex];
+  if (opt.dataset.price) {
+    document.getElementById('prc-' + id).value = opt.dataset.price;
+    calcTotal();
+  }
+}
+
+function rmItem(id) {
+  document.getElementById('ir-' + id)?.remove();
+  calcTotal();
+}
+
+function getItems() {
+  const items = [];
+  document.querySelectorAll('.item-row').forEach(row => {
+    const id = row.id.replace('ir-', '');
+    const sel = row.querySelector('select');
+    const name = sel.options[sel.selectedIndex]?.text || '';
+    const qty = parseInt(document.getElementById('qty-' + id)?.value) || 0;
+    const price = parseInt(document.getElementById('prc-' + id)?.value) || 0;
+    if (name && name !== '-- Chọn --' && qty > 0)
+      items.push({ name, qty, price, total: qty * price });
+  });
+  return items;
+}
+
+function getTotal() {
+  return getItems().reduce((s, i) => s + i.total, 0);
+}
+
+function calcTotal() {
+  const items = getItems();
+  const bao = items.reduce((s, i) => s + i.qty, 0);
+  const tien = items.reduce((s, i) => s + i.total, 0);
+  document.getElementById('s-bao').textContent = bao + ' bao';
+  document.getElementById('s-tien').textContent = fmt(tien);
+  document.getElementById('s-total').textContent = fmt(tien);
+  calcChange();
+}
+
+function calcChange() {
+  const total = getTotal();
+  const paid = parseInt(document.getElementById('pay-amt').value) || 0;
+  if (payMode === 'cash' && paid > 0) {
+    document.getElementById('row-change').style.display = 'block';
+    document.getElementById('change-val').textContent = fmt(Math.max(0, paid - total));
+  } else {
+    document.getElementById('row-change').style.display = 'none';
+  }
+}
+
+function selPay(mode) {
+  payMode = mode;
+  document.getElementById('opt-cash').className = 'pay-opt' + (mode === 'cash' ? ' sel-cash' : '');
+  document.getElementById('opt-debt').className = 'pay-opt' + (mode === 'debt' ? ' sel-debt' : '');
+  document.getElementById('row-paid').style.display = mode === 'cash' ? 'block' : 'none';
+  document.getElementById('row-change').style.display = 'none';
+}
+
+async function saveBill() {
+  const ten = document.getElementById('kh-ten').value.trim();
+  if (!ten) { showToast('Nhập tên khách hàng!', true); return; }
+  const items = getItems();
+  if (!items.length) { showToast('Thêm ít nhất 1 loại hàng!', true); return; }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang lưu...';
+
+  const res = await apiPost({
+    action: 'saveHoaDon',
+    hoadon: {
+      kh_ten: ten,
+      kh_sdt: document.getElementById('kh-sdt').value.trim(),
+      kh_diachi: document.getElementById('kh-diachi').value.trim(),
+      items,
+      tong_tien: getTotal(),
+      hinh_thuc: payMode,
+      ghi_chu: document.getElementById('pay-note').value.trim(),
+      nguoi_tao: document.getElementById('nv-select').value,
+      ngay: new Date().toISOString(),
+    }
+  });
+
+  btn.disabled = false;
+  btn.textContent = '💾 Lưu hóa đơn';
+
+  if (res?.ok) {
+    showToast('✅ Đã lưu hóa đơn!');
+    resetForm();
+    loadKhachHang();
+  }
+}
+
+function resetForm() {
+  document.getElementById('kh-ten').value = '';
+  document.getElementById('kh-sdt').value = '';
+  document.getElementById('kh-diachi').value = '';
+  document.getElementById('pay-amt').value = '';
+  document.getElementById('pay-note').value = '';
+  document.getElementById('items-list').innerHTML = '';
+  document.getElementById('s-bao').textContent = '0 bao';
+  document.getElementById('s-tien').textContent = '0 đ';
+  document.getElementById('s-total').textContent = '0 đ';
+  payMode = 'cash';
+  selPay('cash');
+  addItem();
+}
+
+// ══════════════════════════════════════
+// LỊCH SỬ
+// ══════════════════════════════════════
+async function loadLS() {
+  const today = document.getElementById('ls-date').value || new Date().toISOString().slice(0,10);
+  document.getElementById('ls-list').innerHTML = '<div class="loading"><div class="spinner"></div><br>Đang tải...</div>';
+  const d = await api({ action: 'getHoaDon', from: today, to: today });
+  lsCache = d || [];
+  renderLS();
+}
+
+function renderLS() {
+  const q = document.getElementById('ls-q').value.toLowerCase();
+  let data = lsCache;
+  if (q) data = data.filter(h => (h.kh_ten || '').toLowerCase().includes(q));
+
+  const el = document.getElementById('ls-list');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="icon">📋</div>Không có hóa đơn</div>';
+    return;
+  }
+  el.innerHTML = data.map(h => `
+    <div class="hd-card" onclick="openHD('${h.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:15px">${h.kh_ten}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${fmtDate(h.ngay)} • ${(h.items||[]).reduce((s,i)=>s+i.qty,0)} bao
+          </div>
+          <div style="font-size:12px;color:var(--muted)">
+            ${(h.items||[]).map(i=>i.name.split('(')[0].trim()).join(', ')}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:800;color:var(--green);font-size:16px">${fmt(h.tong_tien)}</div>
+          <div style="margin-top:4px">
+            ${h.trang_thai==='paid'?'<span class="badge badge-paid">Đã TT</span>':
+              h.trang_thai==='debt'?'<span class="badge badge-debt">Mua nợ</span>':
+              '<span class="badge badge-col">Đã thu</span>'}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${h.nguoi_tao||''}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openHD(id) {
+  selHDId = id;
+  const h = lsCache.find(x => String(x.id) === String(id));
+  if (!h) return;
+  document.getElementById('btn-thu').style.display = h.trang_thai === 'debt' ? 'inline-flex' : 'none';
+  document.getElementById('modal-hd-body').innerHTML = `
+    <div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:17px">${h.kh_ten}</div>
+      ${h.kh_sdt ? `<div style="font-size:13px;color:var(--muted)">📞 ${h.kh_sdt}</div>` : ''}
+      ${h.kh_diachi ? `<div style="font-size:13px;color:var(--muted)">📍 ${h.kh_diachi}</div>` : ''}
+      <div style="font-size:13px;color:var(--muted)">🕐 ${fmtDate(h.ngay)}</div>
+      <div style="font-size:12px;color:var(--muted)">👤 ${h.nguoi_tao||''}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px">
+      <tr style="background:var(--green-ll)">
+        <th style="padding:8px;color:var(--green)">Loại hàng</th>
+        <th style="padding:8px;text-align:center;color:var(--green)">Bao</th>
+        <th style="padding:8px;text-align:right;color:var(--green)">Tiền</th>
+      </tr>
+      ${(h.items||[]).map(i=>`
+        <tr><td style="padding:8px;border-bottom:1px solid var(--border)">${i.name}</td>
+        <td style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">${i.qty}</td>
+        <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">${fmt(i.total)}</td></tr>
+      `).join('')}
+    </table>
+    <div style="background:var(--green);color:#fff;border-radius:8px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800">
+        <span>Tổng tiền</span><span>${fmt(h.tong_tien)}</span>
+      </div>
+    </div>
+    ${h.ghi_chu ? `<div style="margin-top:8px;font-size:13px;color:var(--muted)">📝 ${h.ghi_chu}</div>` : ''}
+  `;
+  document.getElementById('modal-hd').classList.add('open');
+}
+
+async function markPaid() {
+  const res = await apiPost({ action: 'updateTrangThai', id: selHDId, trang_thai: 'collected' });
+  if (res?.ok) {
+    closeModal('modal-hd');
+    showToast('✅ Đã đánh dấu thu tiền!');
+    loadLS();
+    loadCN();
+  }
+}
+
+async function deleteHD() {
+  if (!confirm('Xóa hóa đơn này?')) return;
+  const res = await apiPost({ action: 'deleteHoaDon', id: selHDId });
+  if (res?.ok) {
+    closeModal('modal-hd');
+    showToast('Đã xóa');
+    loadLS();
+  }
+}
+
+// ══════════════════════════════════════
+// CÔNG NỢ
+// ══════════════════════════════════════
+async function loadCN() {
+  document.getElementById('cn-list').innerHTML = '<div class="loading"><div class="spinner"></div><br>Đang tải...</div>';
+  const d = await api({ action: 'getCongNo' });
+  cnCache = d || [];
+  renderCN();
+}
+
+function renderCN() {
+  const q = document.getElementById('cn-q').value.toLowerCase();
+  let data = cnCache;
+  if (q) data = data.filter(k => k.ten.toLowerCase().includes(q));
+
+  const totalNo = data.reduce((s, k) => s + k.tong, 0);
+  document.getElementById('cn-stats').innerHTML = `
+    <div class="stat red"><div class="val">${data.length}</div><div class="lbl">Khách đang nợ</div></div>
+    <div class="stat red"><div class="val" style="font-size:17px">${fmt(totalNo)}</div><div class="lbl">Tổng nợ</div></div>
+  `;
+
+  const el = document.getElementById('cn-list');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="icon">🎉</div>Không có công nợ!</div>';
+    return;
+  }
+  el.innerHTML = data.map(k => `
+    <div class="debt-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="name">${k.ten}</div>
+          ${k.sdt ? `<div style="font-size:12px;color:var(--muted)">📞 ${k.sdt}</div>` : ''}
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">
+            ${(k.hoadon||[]).map(h=>`${h.ngay?.slice(5,10)}: ${fmt(h.tong_tien)}`).join(' | ')}
+          </div>
+        </div>
+        <div class="amount">${fmt(k.tong)}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-danger btn-sm" onclick="openThu('${k.ten}')">💰 Thu tiền</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openThu(ten) {
+  selCNKH = ten;
+  const kh = cnCache.find(k => k.ten === ten);
+  if (!kh) return;
+  document.getElementById('modal-thu-body').innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-weight:700;font-size:16px">${ten}</div>
+      <div style="color:var(--red);font-size:20px;font-weight:800">Nợ: ${fmt(kh.tong)}</div>
+    </div>
+    <div class="form-row">
+      <label>Thu tất cả hóa đơn nợ</label>
+      ${(kh.hoadon||[]).map(h=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;font-weight:400">
+          <input type="checkbox" checked value="${h.id}" style="width:18px;height:18px;accent-color:var(--green)">
+          ${h.ngay?.slice(0,10)} — ${fmt(h.tong_tien)}
+        </label>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('modal-thu').classList.add('open');
+}
+
+async function confirmThu() {
+  const checks = document.querySelectorAll('#modal-thu-body input[type=checkbox]:checked');
+  const ids = Array.from(checks).map(c => c.value);
+  if (!ids.length) { showToast('Chọn ít nhất 1 hóa đơn!', true); return; }
+  const res = await apiPost({ action: 'thuNo', ids });
+  if (res?.ok) {
+    closeModal('modal-thu');
+    showToast(`✅ Đã thu ${res.updated} hóa đơn!`);
+    loadCN();
+  }
+}
+
+// ══════════════════════════════════════
+// BÁO CÁO
+// ══════════════════════════════════════
+async function renderBC() {
+  const from = document.getElementById('bc-from').value;
+  const to   = document.getElementById('bc-to').value;
+  document.getElementById('bc-content').innerHTML = '<div class="loading"><div class="spinner"></div><br>Đang tải...</div>';
+  const d = await api({ action: 'getBaoCao', from, to });
+  if (!d) return;
+
+  const pRows = (d.theo_sanpham || []).map(p => `
+    <tr><td style="padding:8px;border-bottom:1px solid var(--border)">${p.ten}</td>
+    <td style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">${p.qty}</td>
+    <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">${fmt(p.total)}</td></tr>
+  `).join('');
+
+  document.getElementById('bc-content').innerHTML = `
+    <div class="stats" style="grid-template-columns:1fr 1fr">
+      <div class="stat"><div class="val">${d.tong_hoadon}</div><div class="lbl">Hóa đơn</div></div>
+      <div class="stat"><div class="val">${d.tong_bao}</div><div class="lbl">Tổng bao</div></div>
+      <div class="stat"><div class="val" style="font-size:16px">${fmt(d.doanh_thu)}</div><div class="lbl">Doanh thu</div></div>
+      <div class="stat red"><div class="val" style="font-size:16px">${fmt(d.con_no)}</div><div class="lbl">Còn nợ</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">📦 Theo loại hàng</div>
+      <div class="tbl-wrap">
+        <table>
+          <tr style="background:var(--green-ll)">
+            <th style="padding:8px;color:var(--green)">Loại hàng</th>
+            <th style="padding:8px;text-align:center;color:var(--green)">Bao</th>
+            <th style="padding:8px;text-align:right;color:var(--green)">Doanh thu</th>
+          </tr>
+          ${pRows || '<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">Chưa có dữ liệu</td></tr>'}
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════
+// SẢN PHẨM
+// ══════════════════════════════════════
+function renderSPList() {
+  const el = document.getElementById('sp-list');
+  if (!sanpham.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Chưa có sản phẩm</div>'; return; }
+  el.innerHTML = sanpham.map(p => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${p.ten}</div>
+        <div style="font-size:12px;color:var(--muted)">${fmt(p.don_gia)}/bao</div>
+      </div>
+      <button class="btn-rm" onclick="rmSP('${p.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addSP() {
+  const ten = document.getElementById('sp-ten').value.trim();
+  const gia = parseInt(document.getElementById('sp-gia').value) || 0;
+  if (!ten) { showToast('Nhập tên loại hàng!', true); return; }
+  const res = await apiPost({ action: 'saveSanPham', sanpham: { ten, don_gia: gia } });
+  if (res?.ok) {
+    document.getElementById('sp-ten').value = '';
+    document.getElementById('sp-gia').value = '';
+    showToast('✅ Đã thêm!');
+    await loadSanPham();
+  }
+}
+
+async function rmSP(id) {
+  if (!confirm('Xóa loại hàng này?')) return;
+  const res = await apiPost({ action: 'deleteSanPham', id });
+  if (res?.ok) { showToast('Đã xóa'); await loadSanPham(); }
+}
+
+// ══════════════════════════════════════
+// CÀI ĐẶT
+// ══════════════════════════════════════
+function saveCfg() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const nv  = document.getElementById('cfg-nv').value.trim();
+  if (!url) { showToast('Nhập URL!', true); return; }
+  GAS_URL = url;
+  localStorage.setItem('gas_url', url);
+  if (nv) {
+    const nvList = nv.split(',').map(s => s.trim());
+    const sel = document.getElementById('nv-select');
+    sel.innerHTML = nvList.map(n => `<option value="${n}">${n}</option>`).join('');
+    localStorage.setItem('nv_list', nv);
+  }
+  showToast('✅ Đã lưu cấu hình!');
+  loadSanPham();
+  loadKhachHang();
+}
+
+function loadCfg() {
+  const url = localStorage.getItem('gas_url') || '';
+  const nv  = localStorage.getItem('nv_list') || '';
+  if (url) document.getElementById('cfg-url').value = url;
+  if (nv) {
+    document.getElementById('cfg-nv').value = nv;
+    const nvList = nv.split(',').map(s => s.trim());
+    const sel = document.getElementById('nv-select');
+    sel.innerHTML = nvList.map(n => `<option value="${n}">${n}</option>`).join('');
+  }
+}
+
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function gotoTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'lich-su') loadLS();
+  if (name === 'cong-no') loadCN();
+  if (name === 'bao-cao') renderBC();
+  if (name === 'cai-dat') { loadCfg(); renderSPList(); }
+}
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+function fmt(n) {
+  return new Intl.NumberFormat('vi-VN').format(n || 0) + ' đ';
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function showToast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function updateClock() {
+  document.getElementById('topbar-time').textContent =
+    new Date().toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+function init() {
+  loadCfg();
+  addItem();
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('ls-date').value = today;
+  document.getElementById('bc-from').value = today;
+  document.getElementById('bc-to').value   = today;
+
+  document.querySelectorAll('.modal-bg').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  });
+
+  if (GAS_URL) {
+    loadSanPham();
+    loadKhachHang();
+  } else {
+    showToast('⚙️ Vào Cài đặt để nhập URL!', true);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
